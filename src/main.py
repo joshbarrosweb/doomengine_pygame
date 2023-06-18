@@ -1,8 +1,10 @@
+import pygame as pg
+import sys
 from wad_data import WADData
 from settings import *
 from map_renderer import MapRenderer
-import pygame as pg
-import sys
+from player import Player
+from bsp import BSP
 
 class DoomEngine:
   def __init__(self, wad_path='./resources/wad/DOOM1.WAD'):
@@ -16,15 +18,19 @@ class DoomEngine:
   def on_init(self):
     self.wad_data = WADData(self, map_name='E1M1')
     self.map_renderer = MapRenderer(self)
+    self.player = Player(self)
+    self.bsp = BSP(self)
 
   def update(self):
+    self.player.update()
+    self.bsp.update()
     self.dt = self.clock.tick()
-    pg.display.flip()
     pg.display.set_caption(f'{self.clock.get_fps()}')
 
   def draw(self):
     self.screen.fill('black')
     self.map_renderer.draw()
+    pg.display.flip()
 
   def check_events(self):
     for e in pg.event.get():
