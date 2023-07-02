@@ -1,6 +1,10 @@
 from wad_reader import WADReader
+from asset_data import AssetData
 
 class WADData:
+  # This class is responsible for loading and managing data from the WAD file.
+  # These constants define the indices and flags for different elements in the WAD file.
+
   LUMP_INDICES = {
     'THINGS': 1, 'LINEDEFS': 2, 'SIDEDEFS': 3, 'VERTEXES': 4, 'SEGS': 5,
     'SSECTORS': 6, 'NODES': 7, 'SECTORS': 8, 'REJECT': 9, 'BLOCKMAP': 10
@@ -12,6 +16,8 @@ class WADData:
   }
 
   def __init__(self, engine, map_name):
+    # This method initializes the WADData object, loading all relevant data from the WAD file.
+
     self.reader = WADReader(engine.wad_path)
     self.map_index = self.get_lump_index(lump_name=map_name)
     self.vertexes = self.get_lump_data(
@@ -67,18 +73,27 @@ class WADData:
     # print(f'\n{map_name}_index = {self.map_index}')
 
     self.update_data()
+
+    self.asset_data = AssetData(self)
+
     self.reader.close()
 
   def update_data(self):
+    # This method updates all the loaded data, applying changes to the linedefs, sidedefs, and segments.
+
     self.update_linedefs()
     self.update_sidedefs()
     self.update_segs()
 
   def update_sidedefs(self):
+    # This method updates the sidedefs, linking them with their respective sectors.
+
     for sidedef in self.sidedefs:
       sidedef.sector = self.sectors[sidedef.sector_id]
 
   def update_linedefs(self):
+    # This method updates the linedefs, linking them with their respective sidedefs.
+
     for linedef in self.linedefs:
       linedef.front_sidedef = self.sidedefs[linedef.front_sidedef_id]
 
@@ -88,6 +103,8 @@ class WADData:
         linedef.back_sidedef = self.sidedefs[linedef.back_sidedef_id]
 
   def update_segs(self):
+    # This method updates the segments, adjusting their properties based on their corresponding linedefs.
+
     for seg in self.segments:
       seg.start_vertex = self.vertexes[seg.start_vertex_id]
       seg.end_vertex = self.vertexes[seg.end_vertex_id]
@@ -110,13 +127,24 @@ class WADData:
       seg.angle = (seg.angle << 16) * 8.38190317e-8
       seg.angle = seg.angle + 360 if seg.angle < 0 else seg.angle
 
+      if seg.front_sector and seg.back_sector:
+        if front_sidedef.upper_texture == '-':
+          seg.linedef.front_sidedef.upper_texture = back_sidedef.upper_texture
+        if front_sidedef.lower_texture == '-':
+          seg.linedef.front_sidedef.lower_texture = back_sidedef.lower_texture
+
+
   @staticmethod
   def print_attrs(obj):
+    # This method prints out all the attributes of a given object, useful for debugging.
+
     print()
     for attr in obj.__slots__:
       print(eval(f'obj.{attr}'), end=' ')
 
   def get_lump_data(self, reader_func, lump_index, num_bytes, header_length=0):
+    # This method reads data from a specified lump in the WAD file.
+
     lump_info = self.reader.directory[lump_index]
     count = lump_info['lump_size'] // num_bytes
     data = []
@@ -126,6 +154,9 @@ class WADData:
     return data
 
   def get_lump_index(self, lump_name):
+    # This method returns the index of a specified lump in the WAD file.
+
     for index, lump_info in enumerate(self.reader.directory):
       if lump_name in lump_info.values():
         return index
+    return False
